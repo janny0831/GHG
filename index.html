@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>員工服裝尺寸登記系統</title>
+    <title>員工服裝尺寸登記系統 - 多項目版</title>
     <script src="https://cdn.tailwindcss.com"></script>
     <script src="https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.18.5/xlsx.full.min.js"></script>
     <script src="https://unpkg.com/lucide@latest"></script>
@@ -15,10 +15,10 @@
         .custom-scrollbar::-webkit-scrollbar-track { background: transparent; }
         .custom-scrollbar::-webkit-scrollbar-thumb { background: #e2e8f0; border-radius: 10px; }
         
-        /* 增加按鈕點擊範圍感 */
-        .btn-icon-hover:hover {
-            background-color: #fee2e2;
-            color: #ef4444;
+        /* 統計表格專用樣式 */
+        .stats-table th, .stats-table td {
+            border: 1px solid #e2e8f0;
+            white-space: nowrap;
         }
     </style>
 </head>
@@ -27,18 +27,18 @@
     <div id="welcome-screen" class="min-h-screen bg-slate-50 flex flex-col items-center justify-center p-4">
         <div class="bg-white rounded-3xl shadow-2xl p-10 max-w-md w-full text-center border border-slate-100">
             <div class="w-24 h-24 bg-indigo-50 text-indigo-600 rounded-full flex items-center justify-center mx-auto mb-8">
-                <i data-lucide="shirt" size="48"></i>
+                <i data-lucide="layout-list" size="48"></i>
             </div>
-            <h1 class="text-2xl font-black text-slate-800 mb-3">大量 管理部員工服裝尺寸登記系統</h1>
-            <p class="text-slate-400 mb-10 font-medium">請匯入您的員工名單來開始使用</p>
+            <h1 class="text-2xl font-black text-slate-800 mb-3">大量管理部 尺寸登記系統</h1>
+            <p class="text-slate-400 mb-10 font-medium">請匯入員工名單來開始新專案</p>
             
             <div class="space-y-4">
                 <input type="file" id="file-input-initial" accept=".xlsx, .xls" class="hidden">
                 <button onclick="document.getElementById('file-input-initial').click()" class="w-full flex items-center justify-center gap-3 bg-indigo-600 text-white py-4 px-6 rounded-2xl hover:bg-indigo-700 transition-all font-bold shadow-lg shadow-indigo-200 active:scale-95">
-                    <i data-lucide="upload"></i> 匯入 XLSX 檔案
+                    <i data-lucide="upload"></i> 匯入 XLSX 開始
                 </button>
                 <button onclick="downloadTemplate()" class="w-full flex items-center justify-center gap-3 bg-white border-2 border-slate-100 text-slate-600 py-4 px-6 rounded-2xl hover:bg-slate-50 transition-all font-bold active:scale-95">
-                    <i data-lucide="file-down"></i> 下載空白範例檔
+                    <i data-lucide="file-down"></i> 下載名單範例檔
                 </button>
             </div>
         </div>
@@ -59,7 +59,7 @@
             <div class="p-6 border-b border-slate-200 hidden md:block">
                 <div class="flex items-center gap-3 text-indigo-600 mb-2">
                     <i data-lucide="shirt" size="28"></i>
-                    <h1 class="text-xl font-bold text-slate-800">尺寸登記系統</h1>
+                    <h1 class="text-xl font-bold text-slate-800">管理部 尺寸登記系統</h1>
                 </div>
                 <div class="w-full bg-slate-100 h-2 rounded-full mt-4 overflow-hidden">
                     <div id="total-progress-bar" class="bg-indigo-500 h-full transition-all duration-500" style="width: 0%"></div>
@@ -77,7 +77,7 @@
                     </button>
                 </div>
                 <button onclick="switchTab('manage')" id="tab-btn-manage" class="w-full py-2 rounded-xl flex items-center justify-center gap-2 text-xs font-bold transition border border-slate-200 bg-white text-slate-600 hover:bg-slate-50">
-                    <i data-lucide="user-cog" size="14"></i> 人員異動管理
+                    <i data-lucide="settings" size="14"></i> 專案與人員管理
                 </button>
             </div>
 
@@ -87,7 +87,7 @@
             
             <div class="p-4 border-t border-slate-200 space-y-2 pb-10 md:pb-4">
                 <button id="btn-restart-sys" onclick="goHomeAndClear()" class="w-full py-2.5 flex items-center justify-center gap-2 text-sm font-bold text-slate-500 bg-slate-50 rounded-xl hover:bg-slate-100 transition active:scale-95 border border-slate-200">
-                    <i data-lucide="refresh-ccw" size="18"></i> 重新開始 (清空資料)
+                    <i data-lucide="refresh-ccw" size="18"></i> 重設系統
                 </button>
                 <button id="btn-admin-toggle" onclick="toggleAdmin()" class="w-full py-2.5 flex items-center justify-center gap-2 text-sm font-bold text-indigo-600 bg-indigo-50 rounded-xl hover:bg-indigo-100 transition active:scale-95">
                     <i data-lucide="unlock" size="18"></i> 管理員登入
@@ -98,45 +98,80 @@
         <main class="flex-1 overflow-hidden flex flex-col h-full bg-slate-50">
             
             <div id="view-list" class="flex-1 flex flex-col h-full overflow-hidden">
-                <div class="bg-white p-6 shadow-sm border-b border-slate-200">
-                    <div class="flex flex-col lg:flex-row justify-between gap-6">
-                        <div class="space-y-4 flex-1">
+                <div class="bg-white p-4 lg:p-6 shadow-sm border-b border-slate-200">
+                    <div class="flex flex-col gap-4">
+                        <div class="flex flex-col lg:flex-row justify-between items-start lg:items-center gap-4">
                             <div>
                                 <h2 id="current-unit-name" class="text-2xl font-black text-slate-800">未選取單位</h2>
                                 <div class="flex items-center gap-4 mt-1 text-sm text-slate-500 font-medium">
-                                    <span class="flex items-center gap-1"><i data-lucide="users" size="14"></i> 單位人數: <span id="unit-count">0</span> 人</span>
-                                    <span id="unit-complete-badge" class="hide text-emerald-600 flex items-center gap-1 bg-emerald-50 px-2 py-0.5 rounded-full"><i data-lucide="check-circle-2" size="14"></i> 已完成</span>
+                                    <span class="flex items-center gap-1"><i data-lucide="users" size="14"></i> <span id="unit-count">0</span> 人</span>
+                                    <span id="unit-complete-badge" class="hide text-emerald-600 flex items-center gap-1 bg-emerald-50 px-2 py-0.5 rounded-full"><i data-lucide="check-circle-2" size="14"></i> 單位全完成</span>
                                 </div>
                             </div>
-                            <div class="bg-slate-50 p-3 rounded-xl border border-slate-100 overflow-x-auto">
-                                <div id="unit-size-mini-stats" class="flex gap-2 min-w-max"></div>
+                            <div class="relative w-full lg:w-72">
+                                <i data-lucide="search" size="18" class="absolute left-3 top-1/2 -translate-y-1/2 text-slate-400"></i>
+                                <input type="text" id="search-input" placeholder="搜尋姓名..." oninput="renderEmployeeList()" class="w-full pl-10 pr-4 py-2 bg-slate-100 border-2 border-transparent rounded-xl focus:bg-white focus:border-indigo-500 outline-none transition">
                             </div>
                         </div>
-                        <div class="relative self-end lg:self-center w-full lg:w-72">
-                            <i data-lucide="search" size="18" class="absolute left-3 top-1/2 -translate-y-1/2 text-slate-400"></i>
-                            <input type="text" id="search-input" placeholder="搜尋姓名..." oninput="renderEmployeeList()" class="w-full pl-10 pr-4 py-2 bg-slate-100 border-2 border-transparent rounded-xl focus:bg-white focus:border-indigo-500 outline-none transition">
+
+                        <div class="bg-slate-50 rounded-2xl border border-slate-200 overflow-hidden">
+                            <div class="p-3 bg-slate-100 border-b border-slate-200 flex items-center justify-between">
+                                <h3 class="text-sm font-bold text-slate-700 flex items-center gap-2"><i data-lucide="calculator" size="16"></i> 單位實時統計 (已填寫)</h3>
+                                <select id="unit-stats-item-select" onchange="renderEmployeeList()" class="text-xs bg-white border border-slate-300 rounded px-2 py-1 outline-none"></select>
+                            </div>
+                            <div class="overflow-x-auto">
+                                <table class="w-full text-xs stats-table">
+                                    <thead class="bg-white text-slate-500 uppercase tracking-wider">
+                                        <tr>
+                                            <th class="px-4 py-2 text-left bg-slate-50/50">項目</th>
+                                            <th class="px-2 py-2 text-center">S</th>
+                                            <th class="px-2 py-2 text-center">M</th>
+                                            <th class="px-2 py-2 text-center">L</th>
+                                            <th class="px-2 py-2 text-center">XL</th>
+                                            <th class="px-2 py-2 text-center">2L</th>
+                                            <th class="px-2 py-2 text-center">3L</th>
+                                            <th class="px-2 py-2 text-center">4L</th>
+                                            <th class="px-2 py-2 text-center">5L</th>
+                                            <th class="px-2 py-2 text-center">6L</th>
+                                            <th class="px-4 py-2 text-right bg-slate-50/50">小計</th>
+                                        </tr>
+                                    </thead>
+                                    <tbody id="unit-stats-tbody" class="bg-white"></tbody>
+                                </table>
+                            </div>
                         </div>
                     </div>
                 </div>
+
                 <div class="flex-1 overflow-y-auto p-4 lg:p-6 custom-scrollbar">
                     <div id="employee-cards-container" class="max-w-4xl mx-auto space-y-3"></div>
                 </div>
             </div>
 
             <div id="view-summary" class="flex-1 overflow-y-auto bg-slate-50 p-6 md:p-10 custom-scrollbar hide">
-                <div class="max-w-4xl mx-auto">
-                    <div class="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4 mb-10">
+                <div class="max-w-5xl mx-auto">
+                    <div class="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4 mb-6">
                         <div>
                             <h2 class="text-3xl font-black text-slate-800">全公司尺寸總計</h2>
-                            <p class="text-slate-400 font-medium">統計所有已完成登記的人員</p>
+                            <p class="text-slate-400 font-medium">統計所有已完成登記的人員數據</p>
                         </div>
                         <button onclick="exportResults()" class="flex items-center gap-2 bg-emerald-600 text-white py-3 px-6 rounded-2xl hover:bg-emerald-700 transition font-bold shadow-lg active:scale-95">
-                            <i data-lucide="download"></i> 匯出結果 (XLSX)
+                            <i data-lucide="download"></i> 匯出報表 (XLSX)
                         </button>
                     </div>
-                    <div id="global-summary-grid" class="grid grid-cols-2 md:grid-cols-4 gap-4 mb-10"></div>
+
+                    <div class="mb-6 flex items-center gap-3 p-4 bg-white rounded-2xl border border-slate-200">
+                        <span class="font-bold text-slate-600">檢視項目：</span>
+                        <div id="summary-item-tabs" class="flex flex-wrap gap-2"></div>
+                    </div>
+
+                    <div id="global-summary-grid" class="mb-10"></div>
+                    
                     <div class="bg-white rounded-3xl shadow-sm border border-slate-200 overflow-hidden">
-                        <div class="p-6 bg-slate-800 text-white">各單位填寫進度</div>
+                        <div class="p-6 bg-slate-800 text-white font-bold flex justify-between">
+                            <span>各單位進度總覽</span>
+                            <span id="summary-current-item-label" class="text-indigo-300"></span>
+                        </div>
                         <div id="unit-summary-list" class="divide-y divide-slate-100"></div>
                     </div>
                 </div>
@@ -144,38 +179,58 @@
 
             <div id="view-manage" class="flex-1 overflow-y-auto bg-slate-50 p-6 md:p-10 custom-scrollbar hide">
                 <div class="max-w-4xl mx-auto">
-                    <h2 class="text-3xl font-black text-slate-800 mb-2">人員異動管理</h2>
-                    <p class="text-slate-400 font-medium mb-8">在這裡處理新進、離職人員，或增量匯入名單</p>
-
-                    <div class="grid grid-cols-1 md:grid-cols-2 gap-6 mb-10">
+                    <h2 class="text-3xl font-black text-slate-800 mb-2">管理中心</h2>
+                    
+                    <section class="mb-10">
+                        <div class="flex items-center gap-2 mb-4">
+                            <div class="w-8 h-8 bg-indigo-600 text-white rounded-lg flex items-center justify-center"><i data-lucide="check-square" size="18"></i></div>
+                            <h3 class="text-xl font-bold text-slate-800">1. 設定本次登記項目</h3>
+                        </div>
                         <div class="bg-white p-6 rounded-3xl border border-slate-200 shadow-sm">
-                            <h3 class="font-bold text-slate-700 mb-4 flex items-center gap-2"><i data-lucide="user-plus" size="18"></i> 手動新增人員</h3>
-                            <div class="space-y-3">
-                                <input type="text" id="manual-name" placeholder="員工姓名" class="w-full px-4 py-2 bg-slate-50 border border-slate-200 rounded-xl focus:outline-none focus:ring-2 focus:ring-indigo-500">
-                                <input type="text" id="manual-unit" placeholder="所屬單位" class="w-full px-4 py-2 bg-slate-50 border border-slate-200 rounded-xl focus:outline-none focus:ring-2 focus:ring-indigo-500">
-                                <button onclick="manualAddEmployee()" class="w-full bg-indigo-600 text-white py-2 rounded-xl font-bold hover:bg-indigo-700 transition">確認新增</button>
+                            <p class="text-sm text-slate-400 mb-4">請勾選本次需要員工填寫的衣物種類，員工將會看到對應的選擇區塊。</p>
+                            <div id="project-items-config" class="grid grid-cols-2 sm:grid-cols-4 gap-3 mb-6">
+                            </div>
+                            <div class="flex gap-2">
+                                <input type="text" id="new-item-name" placeholder="新增自定義項目 (如: 工作長褲)" class="flex-1 px-4 py-2 bg-slate-50 border border-slate-200 rounded-xl focus:ring-2 focus:ring-indigo-500 outline-none">
+                                <button onclick="addNewProjectItem()" class="bg-slate-800 text-white px-6 py-2 rounded-xl font-bold hover:bg-slate-900 transition">新增</button>
                             </div>
                         </div>
-                        <div class="bg-white p-6 rounded-3xl border border-indigo-100 bg-indigo-50/30 shadow-sm flex flex-col justify-center items-center text-center">
-                            <i data-lucide="refresh-cw" size="32" class="text-indigo-500 mb-3"></i>
-                            <h3 class="font-bold text-slate-700 mb-2">增量匯入 (不影響現有尺寸)</h3>
-                            <p class="text-xs text-slate-500 mb-4">適合中途有新員工加入時更新名單</p>
-                            <input type="file" id="file-input-incremental" accept=".xlsx, .xls" class="hidden">
-                            <button onclick="document.getElementById('file-input-incremental').click()" class="bg-white border-2 border-indigo-200 text-indigo-600 px-6 py-2 rounded-xl font-bold hover:bg-indigo-50 transition">選擇檔案更新</button>
-                        </div>
-                    </div>
+                    </section>
 
-                    <div class="bg-white rounded-3xl border border-slate-200 overflow-hidden shadow-sm">
-                        <div class="p-6 border-b border-slate-100 flex justify-between items-center bg-slate-50/50">
-                            <h3 class="font-bold text-slate-800">員工總覽 (<span id="manage-total-count">0</span>)</h3>
-                            <div class="relative w-48">
-                                <i data-lucide="search" size="14" class="absolute left-3 top-1/2 -translate-y-1/2 text-slate-400"></i>
-                                <input type="text" id="manage-search" oninput="renderManageList()" placeholder="篩選人員/單位..." class="w-full pl-8 pr-3 py-1.5 text-xs bg-white border border-slate-200 rounded-lg outline-none focus:ring-2 focus:ring-indigo-500 transition">
+                    <section class="mb-10">
+                        <div class="flex items-center gap-2 mb-4">
+                            <div class="w-8 h-8 bg-indigo-600 text-white rounded-lg flex items-center justify-center"><i data-lucide="users" size="18"></i></div>
+                            <h3 class="text-xl font-bold text-slate-800">2. 人員異動管理</h3>
+                        </div>
+                        <div class="grid grid-cols-1 md:grid-cols-2 gap-6 mb-6">
+                            <div class="bg-white p-6 rounded-3xl border border-slate-200 shadow-sm">
+                                <h3 class="font-bold text-slate-700 mb-4 flex items-center gap-2"><i data-lucide="user-plus" size="18"></i> 手動新增</h3>
+                                <div class="space-y-3">
+                                    <input type="text" id="manual-name" placeholder="姓名" class="w-full px-4 py-2 bg-slate-50 border border-slate-200 rounded-xl outline-none focus:ring-2 focus:ring-indigo-500">
+                                    <input type="text" id="manual-unit" placeholder="單位" class="w-full px-4 py-2 bg-slate-50 border border-slate-200 rounded-xl outline-none focus:ring-2 focus:ring-indigo-500">
+                                    <button onclick="manualAddEmployee()" class="w-full bg-indigo-600 text-white py-2 rounded-xl font-bold hover:bg-indigo-700 transition">確認新增</button>
+                                </div>
+                            </div>
+                            <div class="bg-white p-6 rounded-3xl border border-indigo-100 bg-indigo-50/30 shadow-sm flex flex-col justify-center items-center text-center">
+                                <i data-lucide="refresh-cw" size="32" class="text-indigo-500 mb-3"></i>
+                                <h3 class="font-bold text-slate-700 mb-2">增量匯入名單</h3>
+                                <p class="text-xs text-slate-500 mb-4">補充新名單，不影響現有尺寸紀錄</p>
+                                <input type="file" id="file-input-incremental" accept=".xlsx, .xls" class="hidden">
+                                <button onclick="document.getElementById('file-input-incremental').click()" class="bg-white border-2 border-indigo-200 text-indigo-600 px-6 py-2 rounded-xl font-bold hover:bg-indigo-50 transition">選擇檔案</button>
                             </div>
                         </div>
-                        <div id="manage-employee-list" class="divide-y divide-slate-100 max-h-[500px] overflow-y-auto custom-scrollbar">
+
+                        <div class="bg-white rounded-3xl border border-slate-200 overflow-hidden shadow-sm">
+                            <div class="p-6 border-b border-slate-100 flex justify-between items-center bg-slate-50/50">
+                                <h3 class="font-bold text-slate-800">名單總覽 (<span id="manage-total-count">0</span>)</h3>
+                                <div class="relative w-48">
+                                    <i data-lucide="search" size="14" class="absolute left-3 top-1/2 -translate-y-1/2 text-slate-400"></i>
+                                    <input type="text" id="manage-search" oninput="renderManageList()" placeholder="搜尋..." class="w-full pl-8 pr-3 py-1.5 text-xs bg-white border border-slate-200 rounded-lg outline-none focus:ring-2 focus:ring-indigo-500 transition">
+                                </div>
                             </div>
-                    </div>
+                            <div id="manage-employee-list" class="divide-y divide-slate-100 max-h-[400px] overflow-y-auto custom-scrollbar"></div>
+                        </div>
+                    </section>
                 </div>
             </div>
         </main>
@@ -187,33 +242,22 @@
                 <i data-lucide="alert-triangle" size="28" id="confirm-icon"></i>
             </div>
             <h3 id="confirm-title" class="text-xl font-black text-center text-slate-800 mb-2">確認操作</h3>
-            <p id="confirm-message" class="text-slate-500 text-sm text-center mb-8 font-medium">您確定要執行此操作嗎？</p>
+            <p id="confirm-message" class="text-slate-500 text-sm text-center mb-8 font-medium"></p>
             <div class="flex gap-3">
-                <button onclick="closeConfirmModal()" class="flex-1 py-3 bg-slate-100 text-slate-600 font-bold rounded-xl hover:bg-slate-200 transition active:scale-95">取消</button>
-                <button id="confirm-action-btn" class="flex-1 py-3 text-white font-bold rounded-xl transition shadow-lg active:scale-95">確定</button>
+                <button onclick="closeConfirmModal()" class="flex-1 py-3 bg-slate-100 text-slate-600 font-bold rounded-xl hover:bg-slate-200 transition">取消</button>
+                <button id="confirm-action-btn" class="flex-1 py-3 text-white font-bold rounded-xl transition shadow-lg">確定</button>
             </div>
-        </div>
-    </div>
-
-    <div id="custom-alert-modal" class="fixed inset-0 bg-slate-900/50 z-[100] flex items-center justify-center p-4 opacity-0 pointer-events-none transition-opacity duration-300">
-        <div class="bg-white rounded-3xl shadow-2xl max-w-sm w-full p-6 transform scale-95 transition-transform duration-300" id="custom-alert-box">
-            <div class="w-14 h-14 rounded-full bg-indigo-50 text-indigo-500 flex items-center justify-center mb-5 mx-auto">
-                <i data-lucide="info" size="28"></i>
-            </div>
-            <h3 id="alert-title" class="text-xl font-black text-center text-slate-800 mb-2">提示</h3>
-            <p id="alert-message" class="text-slate-500 text-sm text-center mb-8 font-medium">操作完成</p>
-            <button onclick="closeAlertModal()" class="w-full py-3 bg-indigo-600 text-white font-bold rounded-xl hover:bg-indigo-700 transition shadow-lg shadow-indigo-200 active:scale-95">確定</button>
         </div>
     </div>
 
     <div id="password-modal" class="fixed inset-0 bg-slate-900/50 z-[110] flex items-center justify-center p-4 opacity-0 pointer-events-none transition-opacity duration-300">
         <div class="bg-white rounded-3xl shadow-2xl max-w-sm w-full p-6 transform scale-95 transition-transform duration-300" id="password-box">
             <h3 class="text-xl font-black text-center text-slate-800 mb-2">管理員驗證</h3>
-            <p class="text-slate-500 text-sm text-center mb-6 font-medium">請輸入密碼以解鎖統計與異動功能</p>
-            <input type="password" id="admin-password-input" placeholder="請輸入密碼 (預設: admin)" onkeyup="if(event.key === 'Enter') verifyPassword()" class="w-full px-4 py-3 bg-slate-50 border border-slate-200 rounded-xl outline-none focus:ring-2 focus:ring-indigo-500 mb-6 text-center tracking-widest font-bold">
+            <p class="text-slate-500 text-sm text-center mb-6 font-medium">請輸入管理密碼 (預設: admin)</p>
+            <input type="password" id="admin-password-input" placeholder="密碼" onkeyup="if(event.key === 'Enter') verifyPassword()" class="w-full px-4 py-3 bg-slate-50 border border-slate-200 rounded-xl outline-none focus:ring-2 focus:ring-indigo-500 mb-6 text-center tracking-widest font-bold">
             <div class="flex gap-3">
-                <button onclick="closePasswordModal()" class="flex-1 py-3 bg-slate-100 text-slate-600 font-bold rounded-xl hover:bg-slate-200 transition active:scale-95">取消</button>
-                <button onclick="verifyPassword()" class="flex-1 py-3 bg-indigo-600 text-white font-bold rounded-xl hover:bg-indigo-700 transition shadow-lg shadow-indigo-200 active:scale-95">解鎖</button>
+                <button onclick="closePasswordModal()" class="flex-1 py-3 bg-slate-100 text-slate-600 font-bold rounded-xl hover:bg-slate-200 transition">取消</button>
+                <button onclick="verifyPassword()" class="flex-1 py-3 bg-indigo-600 text-white font-bold rounded-xl hover:bg-indigo-700 transition shadow-lg">登入</button>
             </div>
         </div>
     </div>
@@ -223,7 +267,6 @@
         import { getAnalytics } from "https://www.gstatic.com/firebasejs/12.9.0/firebase-analytics.js";
         import { getFirestore, doc, setDoc, onSnapshot } from "https://www.gstatic.com/firebasejs/12.9.0/firebase-firestore.js";
 
-        // Firebase 設定檔 (已使用您提供的 API KEY)
         const firebaseConfig = {
             apiKey: "AIzaSyD4xB2mpR2pUZBMjyTFjX4NVoZw1unotlE",
             authDomain: "ghgtl-5f69d.firebaseapp.com",
@@ -234,181 +277,90 @@
             measurementId: "G-W22Y07F9LJ"
         };
 
-        // 初始化 Firebase
         const app = initializeApp(firebaseConfig);
         const analytics = getAnalytics(app);
         const db = getFirestore(app);
         
-        // 設定雲端儲存位置 (將資料統一存在 collection 'clothingApp', document 'mainData')
-        const dataDocRef = doc(db, 'clothingApp', 'mainData');
+        // 資料庫路徑設定
+        const dataDocRef = doc(db, 'clothingApp_multiItem', 'mainData');
 
-        const SIZES = ['XS', 'S', 'M', 'L', 'XL', 'XXL', 'XXXL'];
+        const SIZES = ['S', 'M', 'L', 'XL', '2L', '3L', '4L', '5L', '6L'];
+        const DEFAULT_ITEMS = ['短袖', '長袖', '背心', '外套'];
+        
+        // 核心狀態
         let employees = [];
+        let config = {
+            activeItems: ['短袖'], // 目前正在登記的項目
+            allItems: [...DEFAULT_ITEMS] // 系統已知的所有可選項目
+        };
         let selectedUnit = null;
         let activeTab = 'list';
+        let summaryActiveItem = null;
         let isMobileMenuOpen = false;
-        let confirmActionCallback = null;
         let isAdmin = sessionStorage.getItem('clothingAdmin') === 'true';
+        let confirmActionCallback = null;
 
         window.onload = () => {
-            lucide.createIcons();
-            loadDataFromFirebase();
+            loadAllData();
             setupFiles();
-            setupModalEvents();
             updateAdminUI();
-        };
-
-        // --- Firebase 儲存與讀取功能 ---
-        function loadDataFromFirebase() {
-            // 取代原本 localStorage，改為即時監聽 Firestore
-            onSnapshot(dataDocRef, (docSnap) => {
-                if (docSnap.exists()) {
-                    employees = docSnap.data().employees || [];
-                    if (employees.length > 0) {
-                        if (!selectedUnit || !employees.some(e => e.unit === selectedUnit)) {
-                            selectedUnit = employees[0].unit;
-                        }
-                        showMainApp();
-                    } else {
-                        // 若資料庫內無人員，回到歡迎頁面
-                        document.getElementById('welcome-screen').classList.remove('hide');
-                        document.getElementById('main-app').classList.add('hide');
-                    }
-                    renderAll();
-                } else {
-                    // 第一次使用系統，資料庫尚無文件
-                    console.log("No data found in Firebase.");
-                }
-            }, (error) => {
-                console.error("Firebase read error: ", error);
-            });
-        }
-
-        async function saveToFirebase(newEmployeesData) {
-            try {
-                // 將最新的陣列寫入 Firestore
-                await setDoc(dataDocRef, { employees: newEmployeesData });
-            } catch (error) {
-                console.error("Error writing to Firebase: ", error);
-                showAlertModal('錯誤', '資料庫儲存失敗，請檢查網路連線。');
-            }
-        }
-
-        function setupModalEvents() {
-            document.getElementById('confirm-action-btn').addEventListener('click', () => {
-                if (confirmActionCallback) confirmActionCallback();
-                closeConfirmModal();
-            });
-        }
-
-        function showConfirmModal(title, message, confirmBtnText, confirmBtnClass, iconClass, callback) {
-            document.getElementById('confirm-title').innerText = title;
-            document.getElementById('confirm-message').innerText = message;
-            
-            const actionBtn = document.getElementById('confirm-action-btn');
-            actionBtn.innerText = confirmBtnText;
-            actionBtn.className = `flex-1 py-3 text-white font-bold rounded-xl transition shadow-lg active:scale-95 ${confirmBtnClass}`;
-            
-            const iconContainer = document.getElementById('confirm-icon-container');
-            iconContainer.className = `w-14 h-14 rounded-full flex items-center justify-center mb-5 mx-auto ${iconClass}`;
-
-            confirmActionCallback = callback;
-            
-            const modal = document.getElementById('custom-confirm-modal');
-            const box = document.getElementById('custom-confirm-box');
-            
-            modal.classList.remove('opacity-0', 'pointer-events-none');
-            box.classList.remove('scale-95');
-            box.classList.add('scale-100');
-        }
-
-        function closeConfirmModal() {
-            const modal = document.getElementById('custom-confirm-modal');
-            const box = document.getElementById('custom-confirm-box');
-            modal.classList.add('opacity-0', 'pointer-events-none');
-            box.classList.remove('scale-100');
-            box.classList.add('scale-95');
-            confirmActionCallback = null;
-        }
-
-        function showAlertModal(title, message) {
-            document.getElementById('alert-title').innerText = title;
-            document.getElementById('alert-message').innerText = message;
-            const modal = document.getElementById('custom-alert-modal');
-            const box = document.getElementById('custom-alert-box');
-            modal.classList.remove('opacity-0', 'pointer-events-none');
-            box.classList.remove('scale-95');
-            box.classList.add('scale-100');
-        }
-
-        function closeAlertModal() {
-            const modal = document.getElementById('custom-alert-modal');
-            const box = document.getElementById('custom-alert-box');
-            modal.classList.add('opacity-0', 'pointer-events-none');
-            box.classList.remove('scale-100');
-            box.classList.add('scale-95');
-        }
-
-        // --- 管理員權限相關邏輯 ---
-        function toggleAdmin() {
-            if (isAdmin) {
-                isAdmin = false;
-                sessionStorage.removeItem('clothingAdmin');
-                if (activeTab !== 'list') switchTab('list');
-                updateAdminUI();
-                showAlertModal('已登出', '管理員權限已鎖定，回到一般人員模式。');
-            } else {
-                const modal = document.getElementById('password-modal');
-                const box = document.getElementById('password-box');
-                modal.classList.remove('opacity-0', 'pointer-events-none');
-                box.classList.remove('scale-95');
-                box.classList.add('scale-100');
-                document.getElementById('admin-password-input').value = '';
-                setTimeout(() => document.getElementById('admin-password-input').focus(), 100);
-            }
-        }
-
-        function closePasswordModal() {
-            const modal = document.getElementById('password-modal');
-            const box = document.getElementById('password-box');
-            modal.classList.add('opacity-0', 'pointer-events-none');
-            box.classList.remove('scale-100');
-            box.classList.add('scale-95');
-        }
-
-        function verifyPassword() {
-            const pwd = document.getElementById('admin-password-input').value;
-            if (pwd === 'admin') { // 預設密碼
-                isAdmin = true;
-                sessionStorage.setItem('clothingAdmin', 'true');
-                closePasswordModal();
-                updateAdminUI();
-                showAlertModal('解鎖成功', '已開啟管理員權限，可使用所有設定與統計功能。');
-            } else {
-                alert('密碼錯誤！請重新輸入。');
-            }
-        }
-
-        function updateAdminUI() {
-            document.getElementById('tab-btn-summary').classList.toggle('hide', !isAdmin);
-            document.getElementById('tab-btn-manage').classList.toggle('hide', !isAdmin);
-            document.getElementById('btn-restart-sys').classList.toggle('hide', !isAdmin);
-
-            const adminBtn = document.getElementById('btn-admin-toggle');
-            if (isAdmin) {
-                adminBtn.innerHTML = '<i data-lucide="lock" size="18"></i> 退出管理員模式';
-                adminBtn.className = 'w-full py-2.5 flex items-center justify-center gap-2 text-sm font-bold text-slate-500 bg-slate-100 rounded-xl hover:bg-slate-200 transition active:scale-95';
-            } else {
-                adminBtn.innerHTML = '<i data-lucide="unlock" size="18"></i> 管理員登入';
-                adminBtn.className = 'w-full py-2.5 flex items-center justify-center gap-2 text-sm font-bold text-indigo-600 bg-indigo-50 rounded-xl hover:bg-indigo-100 transition active:scale-95';
-            }
             lucide.createIcons();
-        }
+            
+            // 綁定確認按鈕事件
+            document.getElementById('confirm-action-btn').onclick = () => { 
+                if (confirmActionCallback) confirmActionCallback(); 
+                closeConfirmModal(); 
+            };
+        };
 
         function setupFiles() {
             document.getElementById('file-input-initial').addEventListener('change', (e) => handleFile(e, true));
             document.getElementById('file-input-incremental').addEventListener('change', (e) => handleFile(e, false));
         }
+
+        // --- Firebase 連線取代 localStorage ---
+        function loadAllData() {
+            onSnapshot(dataDocRef, (docSnap) => {
+                if (docSnap.exists()) {
+                    const data = docSnap.data();
+                    employees = data.employees || [];
+                    config = data.config || { activeItems: ['短袖'], allItems: [...DEFAULT_ITEMS] };
+                    
+                    if (employees.length > 0) {
+                        if (!selectedUnit || !employees.some(e => e.unit === selectedUnit)) {
+                            selectedUnit = employees[0].unit;
+                        }
+                        if (!summaryActiveItem && config.activeItems.length > 0) {
+                            summaryActiveItem = config.activeItems[0];
+                        }
+                        showMainApp();
+                        renderAll();
+                    } else {
+                        document.getElementById('welcome-screen').classList.remove('hide');
+                        document.getElementById('main-app').classList.add('hide');
+                    }
+                } else {
+                    console.log("資料庫尚未建立，等待第一次匯入資料...");
+                }
+            }, (error) => {
+                console.error("Firebase 連線發生錯誤:", error);
+            });
+        }
+
+        async function saveAllData() {
+            try {
+                await setDoc(dataDocRef, { employees, config });
+            } catch (error) {
+                console.error("Firebase 儲存失敗:", error);
+                alert("儲存失敗，請檢查網路連線狀態！");
+            }
+        }
+
+        function saveAndRefresh() {
+            saveAllData();
+            renderAll(); // 在 Firebase 尚未同步前先更新本地 UI 體驗較佳
+        }
+        // ------------------------------------
 
         function handleFile(e, isInitial) {
             const file = e.target.files[0];
@@ -420,48 +372,33 @@
                 const ws = wb.Sheets[wb.SheetNames[0]];
                 const data = XLSX.utils.sheet_to_json(ws, { header: 1 });
                 
-                if (isInitial) {
-                    employees = [];
-                }
-
+                if (isInitial) employees = [];
                 const startIndex = (data[0] && (data[0][0] === '單位' || data[0][1] === '姓名')) ? 1 : 0;
-                let added = 0;
-                let existing = 0;
                 
-                for (let i = startIndex; i < data.length; i++) {
-                    const row = data[i];
+                data.slice(startIndex).forEach((row, i) => {
                     if (row && row[0] && row[1]) {
                         const unit = String(row[0]).trim();
                         const name = String(row[1]).trim();
-                        
-                        const exists = employees.find(e => e.unit === unit && e.name === name);
-                        if (!exists) {
+                        if (!employees.find(e => e.unit === unit && e.name === name)) {
                             employees.push({
-                                id: `emp_${Date.now()}_${i}_${Math.random().toString(36).substr(2, 5)}`,
-                                unit, name, size: null
+                                id: `emp_${Date.now()}_${i}`,
+                                unit, name, gender: null, sizes: {}
                             });
-                            added++;
-                        } else {
-                            existing++;
                         }
                     }
-                }
-
-                saveToFirebase(employees);
-                showMainApp();
+                });
                 
                 if (isInitial) {
                     isAdmin = true;
                     sessionStorage.setItem('clothingAdmin', 'true');
                     updateAdminUI();
-                    showAlertModal('匯入成功', `已清空舊紀錄並建立名單，共 ${added} 人。`);
-                } else {
-                    showAlertModal('更新完成', `新增了 ${added} 人，保留了 ${existing} 人的現有紀錄。`);
                 }
+
+                if (!selectedUnit && employees.length > 0) selectedUnit = employees[0].unit;
+                if (!summaryActiveItem && config.activeItems.length > 0) summaryActiveItem = config.activeItems[0];
                 
-                if (employees.length > 0 && (!selectedUnit || !employees.some(e => e.unit === selectedUnit))) {
-                    selectedUnit = employees[0].unit;
-                }
+                saveAllData();
+                showMainApp();
                 renderAll();
             };
             reader.readAsBinaryString(file);
@@ -473,184 +410,247 @@
             document.getElementById('main-app').classList.remove('hide');
         }
 
-        function switchTab(tab) {
-            if (!isAdmin && tab !== 'list') return;
-            
-            activeTab = tab;
-            ['list', 'summary', 'manage'].forEach(t => {
-                document.getElementById(`view-${t}`).classList.toggle('hide', t !== tab);
-                const btn = document.getElementById(`tab-btn-${t}`);
-                if (t === 'manage') {
-                    btn.className = tab === 'manage' ? 'w-full py-2 rounded-xl flex items-center justify-center gap-2 text-xs font-bold transition border border-indigo-200 bg-indigo-50 text-indigo-700' : 'w-full py-2 rounded-xl flex items-center justify-center gap-2 text-xs font-bold transition border border-slate-200 bg-white text-slate-600 hover:bg-slate-50';
-                } else {
-                    btn.className = tab === t ? 'flex-1 py-2 rounded-lg flex items-center justify-center gap-2 text-xs font-bold transition bg-indigo-600 text-white shadow-inner' : 'flex-1 py-2 rounded-lg flex items-center justify-center gap-2 text-xs font-bold transition text-slate-500 hover:bg-slate-50';
-                }
-            });
-            document.getElementById('unit-list-wrapper').classList.toggle('hide', tab === 'manage');
-            renderAll();
-        }
-
         function renderAll() {
             renderSidebar();
             renderEmployeeList();
             renderSummary();
-            renderManageList();
-            updateProgress();
+            renderManageView();
+            updateGlobalProgress();
             lucide.createIcons();
         }
 
         function renderSidebar() {
             const container = document.getElementById('unit-list-container');
-            const stats = getUnitStats();
-            container.innerHTML = stats.map(s => `
-                <button onclick="selectUnit('${s.unit}')" class="w-full flex items-center p-3 rounded-xl transition-all text-left border ${selectedUnit === s.unit ? 'bg-indigo-600 text-white border-indigo-600 shadow-md' : 'bg-white text-slate-700 border-transparent hover:border-slate-200'}">
-                    <div class="flex-1">
-                        <div class="font-bold text-sm">${s.unit}</div>
-                        <div class="text-[10px] ${selectedUnit === s.unit ? 'text-indigo-100' : 'text-slate-400'}">${s.completed}/${s.total} 已填</div>
-                    </div>
-                    ${s.isComplete ? '<i data-lucide="check-circle-2" class="w-4 h-4 ' + (selectedUnit === s.unit ? 'text-indigo-200' : 'text-emerald-500') + '"></i>' : ''}
-                </button>
-            `).join('');
+            const units = [...new Set(employees.map(e => e.unit))].sort();
+            
+            container.innerHTML = units.map(u => {
+                const unitEmps = employees.filter(e => e.unit === u);
+                const totalNeeded = unitEmps.length * config.activeItems.length;
+                let currentDone = 0;
+                unitEmps.forEach(e => {
+                    if (e.gender) {
+                        config.activeItems.forEach(item => { if (e.sizes[item]) currentDone++; });
+                    }
+                });
+                const isComplete = totalNeeded > 0 && currentDone === totalNeeded;
+                
+                return `
+                    <button onclick="selectUnit('${u}')" class="w-full flex items-center p-3 rounded-xl transition-all text-left border ${selectedUnit === u ? 'bg-indigo-600 text-white border-indigo-600 shadow-md' : 'bg-white text-slate-700 border-transparent hover:border-slate-200'}">
+                        <div class="flex-1">
+                            <div class="font-bold text-sm">${u}</div>
+                            <div class="text-[10px] ${selectedUnit === u ? 'text-indigo-100' : 'text-slate-400'}">人數: ${unitEmps.length}</div>
+                        </div>
+                        ${isComplete ? `<i data-lucide="check-circle-2" class="w-4 h-4 ${selectedUnit === u ? 'text-indigo-200' : 'text-emerald-500'}"></i>` : ''}
+                    </button>
+                `;
+            }).join('');
         }
 
         function renderEmployeeList() {
-            const query = document.getElementById('search-input').value;
+            const query = document.getElementById('search-input').value.toLowerCase();
             const container = document.getElementById('employee-cards-container');
             const unitEmps = employees.filter(e => e.unit === selectedUnit);
-            const filtered = unitEmps.filter(e => e.name.includes(query));
-            
+            const filtered = unitEmps.filter(e => e.name.toLowerCase().includes(query));
+
             document.getElementById('current-unit-name').innerText = selectedUnit || "未選擇";
             document.getElementById('unit-count').innerText = unitEmps.length;
-            const completed = unitEmps.filter(e => e.size).length;
-            document.getElementById('unit-complete-badge').classList.toggle('hide', unitEmps.length === 0 || completed !== unitEmps.length);
+
+            // 單位實時統計項目選擇器
+            const select = document.getElementById('unit-stats-item-select');
+            const oldVal = select.value;
+            select.innerHTML = config.activeItems.map(item => `<option value="${item}" ${oldVal === item ? 'selected' : ''}>${item}</option>`).join('');
+            const currentStatItem = select.value || config.activeItems[0];
+
+            // 統計計算
+            const stats = { '男': { t: {}, total: 0 }, '女': { t: {}, total: 0 } };
+            SIZES.forEach(s => { stats['男'].t[s] = 0; stats['女'].t[s] = 0; });
+            unitEmps.forEach(e => {
+                if (e.gender && e.sizes[currentStatItem]) {
+                    stats[e.gender].t[e.sizes[currentStatItem]]++;
+                    stats[e.gender].total++;
+                }
+            });
             
-            const uStats = {};
-            SIZES.forEach(s => uStats[s] = 0);
-            unitEmps.forEach(e => { if(e.size) uStats[e.size]++ });
-            
-            document.getElementById('unit-size-mini-stats').innerHTML = SIZES.map(s => `
-                <div class="bg-white px-3 py-1 rounded border border-slate-100 text-center min-w-[50px]">
-                    <div class="text-[9px] text-slate-400 font-bold">${s}</div>
-                    <div class="text-xs font-black text-indigo-600">${uStats[s]}</div>
-                </div>
+            document.getElementById('unit-stats-tbody').innerHTML = ['男', '女'].map(g => `
+                <tr>
+                    <td class="px-4 py-2 font-bold ${g==='男'?'text-blue-600 bg-blue-50/30':'text-pink-600 bg-pink-50/30'}">${g}生</td>
+                    ${SIZES.map(s => `<td class="px-2 py-2 text-center ${stats[g].t[s]>0?'font-black text-slate-800':'text-slate-300'}">${stats[g].t[s]}</td>`).join('')}
+                    <td class="px-4 py-2 text-right font-black bg-slate-50/50">${stats[g].total}</td>
+                </tr>
             `).join('');
 
-            container.innerHTML = filtered.map(emp => `
-                <div class="bg-white p-4 rounded-2xl shadow-sm border transition-all flex flex-col sm:flex-row sm:items-center justify-between gap-4 ${emp.size ? 'border-slate-200 opacity-90' : 'border-indigo-100 ring-2 ring-indigo-50 bg-white'}">
-                    <div class="flex items-center gap-4">
-                        <div class="w-10 h-10 rounded-xl flex items-center justify-center font-black text-white ${emp.size ? 'bg-slate-300' : 'bg-indigo-500 shadow-md shadow-indigo-100'}">${emp.name.charAt(0)}</div>
-                        <div class="font-bold text-slate-800">${emp.name}</div>
+            // 卡片生成
+            container.innerHTML = filtered.map(emp => {
+                const isEmpComplete = emp.gender && config.activeItems.every(item => emp.sizes[item]);
+                return `
+                    <div class="bg-white p-5 rounded-2xl shadow-sm border flex flex-col gap-4 ${isEmpComplete ? 'border-slate-200 opacity-90' : 'border-indigo-100 ring-2 ring-indigo-50'}">
+                        <div class="flex items-center justify-between border-b border-slate-100 pb-3">
+                            <div class="flex items-center gap-4">
+                                <div class="w-10 h-10 rounded-xl flex items-center justify-center font-black text-white ${isEmpComplete ? 'bg-slate-300' : 'bg-indigo-500'}">${emp.name.charAt(0)}</div>
+                                <div class="font-bold text-lg text-slate-800">${emp.name}</div>
+                            </div>
+                            <div class="flex items-center gap-1">
+                                <button onclick="updateGender('${emp.id}', '男')" class="px-4 py-1.5 rounded-lg text-xs font-black transition-all border ${emp.gender === '男' ? 'bg-blue-500 text-white border-blue-500' : 'bg-white text-slate-400 border-slate-200'}">男</button>
+                                <button onclick="updateGender('${emp.id}', '女')" class="px-4 py-1.5 rounded-lg text-xs font-black transition-all border ${emp.gender === '女' ? 'bg-pink-500 text-white border-pink-500' : 'bg-white text-slate-400 border-slate-200'}">女</button>
+                            </div>
+                        </div>
+                        <div class="grid grid-cols-1 gap-4">
+                            ${config.activeItems.map(item => `
+                                <div class="flex flex-col md:flex-row md:items-center gap-2">
+                                    <div class="w-20 text-xs font-black text-slate-500 shrink-0">${item}</div>
+                                    <div class="flex flex-wrap gap-1">
+                                        ${SIZES.map(sz => `
+                                            <button onclick="updateSize('${emp.id}', '${item}', '${sz}')" class="min-w-[40px] px-2 py-1.5 rounded-lg text-xs font-black transition-all border ${emp.sizes[item] === sz ? 'bg-indigo-600 text-white border-indigo-600' : 'bg-slate-50 text-slate-500 border-transparent hover:border-slate-200'}">${sz}</button>
+                                        `).join('')}
+                                    </div>
+                                </div>
+                            `).join('')}
+                        </div>
                     </div>
-                    <div class="flex flex-wrap gap-1">
-                        ${SIZES.map(sz => `<button onclick="updateSize('${emp.id}', '${sz}')" class="min-w-[42px] px-2 py-1.5 rounded-lg text-xs font-black transition-all ${emp.size === sz ? 'bg-indigo-600 text-white shadow-lg' : 'bg-slate-50 text-slate-500 hover:bg-slate-100'}">${sz}</button>`).join('')}
-                    </div>
-                </div>
-            `).join('');
-        }
-
-        function renderManageList() {
-            const filter = document.getElementById('manage-search').value.trim().toLowerCase();
-            const container = document.getElementById('manage-employee-list');
-            document.getElementById('manage-total-count').innerText = employees.length;
-            
-            const filtered = employees.filter(e => e.name.toLowerCase().includes(filter) || e.unit.toLowerCase().includes(filter))
-                .sort((a, b) => a.unit.localeCompare(b.unit));
-                
-            container.innerHTML = filtered.length > 0 ? filtered.map(emp => `
-                <div class="p-4 flex items-center justify-between hover:bg-slate-50 transition-colors">
-                    <div class="flex items-center gap-3">
-                        <span class="bg-slate-100 text-slate-500 text-[10px] font-bold px-2 py-1 rounded tracking-wider">${emp.unit}</span>
-                        <span class="font-bold text-slate-800">${emp.name}</span>
-                        ${emp.size ? `<span class="text-[10px] bg-emerald-100 text-emerald-700 px-1.5 rounded font-bold">已填: ${emp.size}</span>` : `<span class="text-[10px] bg-slate-100 text-slate-400 px-1.5 rounded font-bold">未填</span>`}
-                    </div>
-                    <button onclick="removeEmployee('${emp.id}')" class="p-2 text-slate-300 hover:text-red-500 transition-colors btn-icon-hover rounded-full">
-                        <i data-lucide="trash-2" size="18"></i>
-                    </button>
-                </div>
-            `).join('') : `<div class="p-10 text-center text-slate-400">找不到符合的人員</div>`;
-            
+                `;
+            }).join('');
             lucide.createIcons();
         }
 
-        function removeEmployee(id) {
-            const emp = employees.find(e => e.id === id);
-            if (emp) {
-                showConfirmModal(
-                    '移除人員',
-                    `確定要移除「${emp.unit} - ${emp.name}」嗎？此操作不可撤銷。`,
-                    '確定移除',
-                    'bg-red-600 hover:bg-red-700 shadow-red-200',
-                    'bg-red-50 text-red-500',
-                    () => {
-                        employees = employees.filter(e => e.id !== id);
-                        saveToFirebase(employees);
-                        renderAll();
-                    }
-                );
-            }
+        function renderManageView() {
+            const configContainer = document.getElementById('project-items-config');
+            configContainer.innerHTML = config.allItems.map(item => `
+                <label class="flex items-center gap-2 p-3 bg-slate-50 rounded-xl border border-slate-200 cursor-pointer hover:bg-slate-100 transition">
+                    <input type="checkbox" onchange="toggleProjectItem('${item}')" ${config.activeItems.includes(item) ? 'checked' : ''} class="w-5 h-5 accent-indigo-600">
+                    <span class="font-bold text-slate-700 text-sm">${item}</span>
+                </label>
+            `).join('');
+            renderManageList();
         }
 
-        function manualAddEmployee() {
-            const name = document.getElementById('manual-name').value.trim();
-            const unit = document.getElementById('manual-unit').value.trim();
-            if (!name || !unit) return showAlertModal('提示', '請填寫完整的員工姓名與所屬單位。');
-            employees.push({ id: `manual_${Date.now()}`, name, unit, size: null });
-            document.getElementById('manual-name').value = '';
-            document.getElementById('manual-unit').value = '';
-            saveToFirebase(employees);
-            renderAll();
+        function renderManageList() {
+            const filter = document.getElementById('manage-search').value.toLowerCase();
+            const container = document.getElementById('manage-employee-list');
+            const filtered = employees.filter(e => e.name.toLowerCase().includes(filter) || e.unit.toLowerCase().includes(filter)).sort((a,b) => a.unit.localeCompare(b.unit));
+            
+            document.getElementById('manage-total-count').innerText = employees.length;
+            container.innerHTML = filtered.map(emp => `
+                <div class="p-4 flex items-center justify-between hover:bg-slate-50">
+                    <div class="flex items-center gap-3">
+                        <span class="bg-slate-100 text-slate-500 text-[10px] font-bold px-2 py-1 rounded">${emp.unit}</span>
+                        <span class="font-bold text-slate-800">${emp.name}</span>
+                    </div>
+                    <button onclick="removeEmployee('${emp.id}')" class="p-2 text-slate-300 hover:text-red-500"><i data-lucide="trash-2" size="18"></i></button>
+                </div>
+            `).join('');
+            lucide.createIcons();
         }
 
         function renderSummary() {
-            const gStats = {};
-            SIZES.forEach(s => gStats[s] = 0);
-            let unselected = 0;
-            employees.forEach(e => { if(e.size) gStats[e.size]++; else unselected++; });
+            const tabsContainer = document.getElementById('summary-item-tabs');
+            if (!summaryActiveItem && config.activeItems.length > 0) summaryActiveItem = config.activeItems[0];
             
-            document.getElementById('global-summary-grid').innerHTML = SIZES.map(s => `
-                <div class="bg-white p-5 rounded-3xl border border-slate-100 text-center">
-                    <div class="text-slate-400 text-[10px] font-bold mb-1 uppercase tracking-widest">${s}</div>
-                    <div class="text-3xl font-black text-indigo-600">${gStats[s]}</div>
-                </div>
-            `).join('') + `
-                <div class="bg-orange-500 p-5 rounded-3xl text-center text-white shadow-lg shadow-orange-100">
-                    <div class="text-orange-200 text-[10px] font-bold mb-1 uppercase tracking-widest">未填寫</div>
-                    <div class="text-3xl font-black">${unselected}</div>
+            tabsContainer.innerHTML = config.activeItems.map(item => `
+                <button onclick="setSummaryItem('${item}')" class="px-4 py-2 rounded-xl text-sm font-bold transition ${summaryActiveItem === item ? 'bg-indigo-600 text-white shadow-md' : 'bg-slate-100 text-slate-500 hover:bg-slate-200'}">${item}</button>
+            `).join('');
+
+            document.getElementById('summary-current-item-label').innerText = `目前檢視：${summaryActiveItem || '無'}`;
+            if (!summaryActiveItem) return;
+
+            const m = {}, f = {};
+            SIZES.forEach(s => { m[s] = 0; f[s] = 0; });
+            employees.forEach(e => {
+                if (e.gender === '男' && e.sizes[summaryActiveItem]) m[e.sizes[summaryActiveItem]]++;
+                if (e.gender === '女' && e.sizes[summaryActiveItem]) f[e.sizes[summaryActiveItem]]++;
+            });
+
+            document.getElementById('global-summary-grid').innerHTML = `
+                <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
+                    <div class="bg-white p-6 rounded-3xl border border-blue-100 shadow-sm">
+                        <div class="flex items-center gap-2 mb-4 text-blue-600 font-bold"><i data-lucide="user" size="20"></i> 男生 (${summaryActiveItem}) 總計</div>
+                        <div class="grid grid-cols-3 gap-3">
+                            ${SIZES.map(s => `<div class="bg-blue-50/50 p-3 rounded-2xl text-center"><div class="text-blue-400 text-[10px] font-bold mb-1">${s}</div><div class="text-2xl font-black text-blue-700">${m[s]}</div></div>`).join('')}
+                        </div>
+                    </div>
+                    <div class="bg-white p-6 rounded-3xl border border-pink-100 shadow-sm">
+                        <div class="flex items-center gap-2 mb-4 text-pink-600 font-bold"><i data-lucide="user" size="20"></i> 女生 (${summaryActiveItem}) 總計</div>
+                        <div class="grid grid-cols-3 gap-3">
+                            ${SIZES.map(s => `<div class="bg-pink-50/50 p-3 rounded-2xl text-center"><div class="text-pink-400 text-[10px] font-bold mb-1">${s}</div><div class="text-2xl font-black text-pink-700">${f[s]}</div></div>`).join('')}
+                        </div>
+                    </div>
                 </div>
             `;
 
-            const uStats = getUnitStats();
-            document.getElementById('unit-summary-list').innerHTML = uStats.map(s => `
-                <div class="p-5 flex items-center justify-between">
-                    <span class="font-bold text-slate-700">${s.unit}</span>
-                    <span class="text-sm font-black text-slate-800">${s.completed} / ${s.total}</span>
-                </div>
-            `).join('');
+            const units = [...new Set(employees.map(e => e.unit))].sort();
+            document.getElementById('unit-summary-list').innerHTML = units.map(u => {
+                const unitEmps = employees.filter(e => e.unit === u);
+                const comp = unitEmps.filter(e => e.gender && e.sizes[summaryActiveItem]).length;
+                return `
+                    <div class="p-5 flex items-center justify-between">
+                        <span class="font-bold text-slate-700">${u}</span>
+                        <div class="flex items-center gap-4">
+                            <div class="w-32 bg-slate-100 h-1.5 rounded-full overflow-hidden">
+                                <div class="bg-indigo-500 h-full" style="width: ${(comp/unitEmps.length)*100}%"></div>
+                            </div>
+                            <span class="text-sm font-black text-slate-800 w-12 text-right">${comp}/${unitEmps.length}</span>
+                        </div>
+                    </div>
+                `;
+            }).join('');
         }
 
-        function getUnitStats() {
-            const stats = {};
-            employees.forEach(emp => {
-                if (!stats[emp.unit]) stats[emp.unit] = { total: 0, completed: 0 };
-                stats[emp.unit].total++;
-                if (emp.size) stats[emp.unit].completed++;
+        // --- 互動行為函數 ---
+        function updateGender(id, g) {
+            const emp = employees.find(e => e.id === id);
+            if (emp) emp.gender = emp.gender === g ? null : g;
+            saveAndRefresh();
+        }
+
+        function updateSize(id, item, sz) {
+            const emp = employees.find(e => e.id === id);
+            if (emp) {
+                if (emp.sizes[item] === sz) delete emp.sizes[item];
+                else emp.sizes[item] = sz;
+            }
+            saveAndRefresh();
+        }
+
+        function toggleProjectItem(item) {
+            if (config.activeItems.includes(item)) {
+                if (config.activeItems.length === 1) {
+                    alert('至少必須保留一個登記項目');
+                    renderManageView();
+                    return;
+                }
+                config.activeItems = config.activeItems.filter(i => i !== item);
+            } else {
+                config.activeItems.push(item);
+            }
+            saveAndRefresh();
+        }
+
+        function addNewProjectItem() {
+            const val = document.getElementById('new-item-name').value.trim();
+            if (!val) return;
+            if (!config.allItems.includes(val)) {
+                config.allItems.push(val);
+                config.activeItems.push(val);
+                document.getElementById('new-item-name').value = '';
+                saveAndRefresh();
+            }
+        }
+
+        function setSummaryItem(item) {
+            summaryActiveItem = item;
+            renderSummary();
+        }
+
+        function updateGlobalProgress() {
+            let totalSlots = employees.length * config.activeItems.length;
+            let doneSlots = 0;
+            employees.forEach(e => {
+                if (e.gender) {
+                    config.activeItems.forEach(item => { if (e.sizes[item]) doneSlots++; });
+                }
             });
-            return Object.entries(stats).map(([unit, d]) => ({ unit, total: d.total, completed: d.completed, isComplete: d.total === d.completed }))
-                .sort((a, b) => a.unit.localeCompare(b.unit));
-        }
-
-        function updateProgress() {
-            const comp = employees.filter(e => e.size).length;
-            const total = employees.length;
-            const rate = total === 0 ? 0 : Math.round((comp / total) * 100);
+            const rate = totalSlots === 0 ? 0 : Math.round((doneSlots / totalSlots) * 100);
             document.getElementById('total-progress-bar').style.width = rate + '%';
-            document.getElementById('total-progress-text').innerText = `${comp} / ${total}`;
-        }
-
-        function updateSize(id, sz) {
-            employees = employees.map(e => e.id === id ? { ...e, size: (e.size === sz ? null : sz) } : e);
-            saveToFirebase(employees);
-            renderAll();
+            document.getElementById('total-progress-text').innerText = `${doneSlots} / ${totalSlots}`;
         }
 
         function selectUnit(u) {
@@ -666,18 +666,109 @@
             lucide.createIcons();
         }
 
+        // --- 管理與系統功能 ---
+        function removeEmployee(id) {
+            const emp = employees.find(e => e.id === id);
+            if (emp) {
+                showConfirmModal('移除人員', `確定移除「${emp.name}」嗎？`, '確定移除', 'bg-red-600', 'bg-red-50 text-red-500', () => {
+                    employees = employees.filter(e => e.id !== id);
+                    saveAndRefresh();
+                });
+            }
+        }
+
+        function manualAddEmployee() {
+            const n = document.getElementById('manual-name').value.trim();
+            const u = document.getElementById('manual-unit').value.trim();
+            if (!n || !u) return;
+            employees.push({ id: `man_${Date.now()}`, unit: u, name: n, gender: null, sizes: {} });
+            document.getElementById('manual-name').value = '';
+            saveAndRefresh();
+        }
+
+        function showConfirmModal(title, message, btnText, btnClass, iconClass, cb) {
+            document.getElementById('confirm-title').innerText = title;
+            document.getElementById('confirm-message').innerText = message;
+            const btn = document.getElementById('confirm-action-btn');
+            btn.innerText = btnText;
+            btn.className = `flex-1 py-3 text-white font-bold rounded-xl transition shadow-lg ${btnClass}`;
+            document.getElementById('confirm-icon-container').className = `w-14 h-14 rounded-full flex items-center justify-center mb-5 mx-auto ${iconClass}`;
+            confirmActionCallback = cb;
+            document.getElementById('custom-confirm-modal').classList.remove('opacity-0', 'pointer-events-none');
+            document.getElementById('custom-confirm-box').classList.remove('scale-95');
+        }
+
+        function closeConfirmModal() {
+            document.getElementById('custom-confirm-modal').classList.add('opacity-0', 'pointer-events-none');
+            document.getElementById('custom-confirm-box').classList.add('scale-95');
+        }
+
+        function closePasswordModal() {
+            document.getElementById('password-modal').classList.add('opacity-0', 'pointer-events-none');
+            document.getElementById('password-box').classList.add('scale-95');
+        }
+
         function goHomeAndClear() {
-            showConfirmModal(
-                '重新開始',
-                '確定要重新開始嗎？這將會清空雲端資料庫的所有名單與已登記的尺寸。',
-                '確定清空',
-                'bg-red-600 hover:bg-red-700 shadow-red-200',
-                'bg-red-50 text-red-500',
-                () => {
-                    saveToFirebase([]); // 將 Firebase 資料清空
+            showConfirmModal('重新開始', '這將會清空所有登記資料與設定，確定嗎？', '確定清空', 'bg-red-600', 'bg-red-50 text-red-500', async () => {
+                try {
+                    await setDoc(dataDocRef, { employees: [], config: { activeItems: ['短袖'], allItems: [...DEFAULT_ITEMS] } });
                     window.location.reload();
+                } catch(error) {
+                    console.error("清除錯誤", error);
                 }
-            );
+            });
+        }
+
+        function verifyPassword() {
+            const pwd = document.getElementById('admin-password-input').value;
+            if (pwd === 'admin') {
+                isAdmin = true;
+                sessionStorage.setItem('clothingAdmin', 'true');
+                closePasswordModal();
+                updateAdminUI();
+                renderAll();
+            } else {
+                alert('密碼錯誤');
+            }
+        }
+
+        function toggleAdmin() {
+            if (isAdmin) {
+                isAdmin = false;
+                sessionStorage.removeItem('clothingAdmin');
+                if (activeTab !== 'list') switchTab('list');
+                updateAdminUI();
+                renderAll();
+            } else {
+                document.getElementById('admin-password-input').value = '';
+                document.getElementById('password-modal').classList.remove('opacity-0', 'pointer-events-none');
+                document.getElementById('password-box').classList.remove('scale-95');
+            }
+        }
+
+        function updateAdminUI() {
+            document.getElementById('tab-btn-summary').classList.toggle('hide', !isAdmin);
+            document.getElementById('tab-btn-manage').classList.toggle('hide', !isAdmin);
+            document.getElementById('btn-restart-sys').classList.toggle('hide', !isAdmin);
+            document.getElementById('btn-admin-toggle').innerHTML = isAdmin ? '<i data-lucide="lock" size="18"></i> 退出管理' : '<i data-lucide="unlock" size="18"></i> 管理員登入';
+            lucide.createIcons();
+        }
+
+        function switchTab(tab) {
+            if (!isAdmin && tab !== 'list') return;
+            activeTab = tab;
+            ['list', 'summary', 'manage'].forEach(t => {
+                document.getElementById(`view-${t}`).classList.toggle('hide', t !== tab);
+                const btn = document.getElementById(`tab-btn-${t}`);
+                if (btn) {
+                    if (t === 'manage') {
+                        btn.className = tab === 'manage' ? 'w-full py-2 rounded-xl flex items-center justify-center gap-2 text-xs font-bold transition border border-indigo-200 bg-indigo-50 text-indigo-700' : 'w-full py-2 rounded-xl flex items-center justify-center gap-2 text-xs font-bold transition border border-slate-200 bg-white text-slate-600 hover:bg-slate-50';
+                    } else {
+                        btn.className = tab === t ? 'flex-1 py-2 rounded-lg flex items-center justify-center gap-2 text-xs font-bold transition bg-indigo-600 text-white shadow-inner' : 'flex-1 py-2 rounded-lg flex items-center justify-center gap-2 text-xs font-bold transition text-slate-500 hover:bg-slate-50';
+                    }
+                }
+            });
+            renderAll();
         }
 
         function downloadTemplate() {
@@ -688,14 +779,93 @@
         }
 
         function exportResults() {
-            const data = [['單位', '姓名', '服裝尺寸'], ...employees.map(e => [e.unit, e.name, e.size || '尚未填寫'])];
-            const ws = XLSX.utils.aoa_to_sheet(data);
             const wb = XLSX.utils.book_new();
-            XLSX.utils.book_append_sheet(wb, ws, "尺寸登記統計");
-            XLSX.writeFile(wb, `服裝尺寸統計結果_${new Date().toLocaleDateString()}.xlsx`);
+            const now = new Date();
+            const dateStr = now.toLocaleString('zh-TW', { hour12: true });
+
+            // --- 1. 建立「全公司總計」Sheet ---
+            let totalEmps = employees.length;
+            let totalM = employees.filter(e => e.gender === '男').length;
+            let totalF = employees.filter(e => e.gender === '女').length;
+
+            const summaryData = [];
+            summaryData.push(['全公司服裝尺寸登記匯總報表']);
+            summaryData.push([`報表日期：${dateStr}`]);
+            summaryData.push([]);
+            summaryData.push(['【公司人員概況】']);
+            summaryData.push(['總人數', totalEmps, '人']);
+            summaryData.push(['男生總數', totalM, '人']);
+            summaryData.push(['女生總數', totalF, '人']);
+            summaryData.push([]);
+            summaryData.push(['【全公司各項目尺寸總計】']);
+            summaryData.push(['項目', '性別', ...SIZES, '合計']);
+
+            config.activeItems.forEach(item => {
+                ['男', '女'].forEach(g => {
+                    const row = [item, g === '男' ? '男性' : '女性'];
+                    let rowTotal = 0;
+                    SIZES.forEach(sz => {
+                        const count = employees.filter(e => e.gender === g && e.sizes[item] === sz).length;
+                        row.push(count);
+                        rowTotal += count;
+                    });
+                    row.push(rowTotal);
+                    summaryData.push(row);
+                });
+            });
+
+            const wsSummary = XLSX.utils.aoa_to_sheet(summaryData);
+            XLSX.utils.book_append_sheet(wb, wsSummary, "全公司總計");
+
+            // --- 2. 依「單位」分別建立 Sheet ---
+            const units = [...new Set(employees.map(e => e.unit))].sort();
+            units.forEach(u => {
+                const unitEmps = employees.filter(e => e.unit === u);
+                const unitData = [];
+                
+                unitData.push([`${u} 服裝尺寸明細與統計`]);
+                unitData.push([]);
+                unitData.push(['【人員明細】']);
+                
+                const header = ['姓名', '性別', ...config.activeItems];
+                unitData.push(header);
+                
+                unitEmps.forEach(emp => {
+                    const row = [emp.name, emp.gender || '未填寫'];
+                    config.activeItems.forEach(item => {
+                        row.push(emp.sizes[item] || '未填寫');
+                    });
+                    unitData.push(row);
+                });
+                
+                unitData.push([]);
+                unitData.push(['【單位各項目尺寸總計】']);
+                unitData.push(['項目', '性別', ...SIZES, '小計']);
+                
+                config.activeItems.forEach(item => {
+                    ['男', '女'].forEach(g => {
+                        const row = [item, g];
+                        let rowTotal = 0;
+                        SIZES.forEach(sz => {
+                            const count = unitEmps.filter(e => e.gender === g && e.sizes[item] === sz).length;
+                            row.push(count);
+                            rowTotal += count;
+                        });
+                        row.push(rowTotal);
+                        unitData.push(row);
+                    });
+                });
+                
+                const wsUnit = XLSX.utils.aoa_to_sheet(unitData);
+                const safeSheetName = u.length > 30 ? u.substring(0, 30) : u;
+                XLSX.utils.book_append_sheet(wb, wsUnit, safeSheetName);
+            });
+
+            const fileName = `尺寸登記統計報表_${Math.floor(Math.random()*100)}.xlsx`;
+            XLSX.writeFile(wb, fileName);
         }
 
-        // 將需要在 HTML 標籤內直接透過 onclick 呼叫的函式，綁定到全域的 window 物件上
+        // --- 把需由 HTML onclick 觸發的函數掛載到 global window 上 ---
         window.downloadTemplate = downloadTemplate;
         window.toggleMobileMenu = toggleMobileMenu;
         window.switchTab = switchTab;
@@ -703,16 +873,18 @@
         window.toggleAdmin = toggleAdmin;
         window.renderEmployeeList = renderEmployeeList;
         window.exportResults = exportResults;
+        window.addNewProjectItem = addNewProjectItem;
         window.manualAddEmployee = manualAddEmployee;
         window.renderManageList = renderManageList;
         window.closeConfirmModal = closeConfirmModal;
-        window.closeAlertModal = closeAlertModal;
         window.verifyPassword = verifyPassword;
         window.closePasswordModal = closePasswordModal;
         window.selectUnit = selectUnit;
+        window.updateGender = updateGender;
         window.updateSize = updateSize;
+        window.toggleProjectItem = toggleProjectItem;
         window.removeEmployee = removeEmployee;
-
+        window.setSummaryItem = setSummaryItem;
     </script>
 </body>
 </html>
